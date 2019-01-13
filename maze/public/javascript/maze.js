@@ -1,15 +1,14 @@
 
 
 // builds NxN maze with walls between random points
-function buildMaze(n, wall = "n", space = " ", start = "%s", end ="%e"){
+function buildMaze(n, wall = "u", space = " ", start = "%s", end ="%e"){
     let grid = [];
     let [empty_row, top_and_bottom] = generateLayoutVars(n, wall, space);
     let walls_per_row = Math.sqrt(n);
 
     for(let i = 0; i < n; ++i){
         grid[i] = empty_row.slice();
-        let occupied = [];
-
+        let occupied = [];  
         for(let j = 0; j < walls_per_row; ++j){
             let x = randInRange(j, n);
             grid[i][x] = wall;
@@ -20,7 +19,9 @@ function buildMaze(n, wall = "n", space = " ", start = "%s", end ="%e"){
     }
 
     ensureEndHasOnePath(grid, n, wall, start, end, space);
-    printMaze(grid, top_and_bottom);
+    // printMaze(grid, top_and_bottom);
+
+    return grid;
 }
 
 // helper methods:
@@ -174,5 +175,7 @@ function shuffle(a) {
     return a;
 }
 
-for(let i = 0; i < 1000; ++i){
-buildMaze(42);}
+// testing
+// for(let i = 0; i < 1000; ++i){  
+//     buildMaze(42);
+// }
