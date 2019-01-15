@@ -13,8 +13,8 @@ function buildMaze(n, wall = "u", space = " ", start = "%s", end ="%e"){
             let x = randInRange(j, n);
             grid[i][x] = wall;
             occupied.push(x);
-            if (i > 0 && grid[i][x] === wall && grid[i - 1][x] === wall)
-                swapNextAvailable(grid, n, i, x, space, wall);
+            // if (i > 0 && grid[i][x] === wall && grid[i - 1][x] === wall)
+            //     swapNextAvailable(grid, n, i, x, space, wall);
         }
         fillInWalls(grid, n, i, wall, space);
     }
@@ -27,14 +27,23 @@ function buildMaze(n, wall = "u", space = " ", start = "%s", end ="%e"){
     return grid;
 }
 
+
 // helper methods:
 function fillInWalls(grid, n, y, wall, space){
     let max = n - 1;
     if(y === 0) return;
-    // addAtRow_WallsBetweenColumnsAndRows(grid, i, wall, space);
+
     for(let x = 0; x < max; ++x){
         // if a square of space
-        if(grid[y][x] === space && grid[y - 1][x] === space && grid[y][x + 1] === space && grid[y - 1][ x + 1] === space){
+        let has_space = true;
+        //if (x < max - 1) has_space = grid[y][x + 2] === space;
+        if (x > 1) has_space = grid[y][x - 1] === space && grid[y - 1][x - 1] === space;
+        let curr_space = grid[y][x] === space;
+        let above_space = grid[y - 1][x] === space;
+        let neighbor_space = grid[y][x + 1] === space;
+        let above_neighbor_space = grid[y - 1][x + 1] === space;
+        // if all space fill some with wall
+        if (has_space && curr_space && above_space && neighbor_space && above_neighbor_space){
             let vert = Math.round(Math.random()) > 0; // if true vertical, else horizontal
             if(vert){
                 grid[y][x] = wall;
@@ -43,21 +52,30 @@ function fillInWalls(grid, n, y, wall, space){
                 grid[y][x] = wall;
                 grid[y][x + 1] = wall;
             }
-        }
-    }
-}
-
-
-
-function addAtRow_WallsBetweenColumnsAndRows(grid, y, wall, space){
-    if(y > 1){
-        for(let x = 0; x < grid.length; x++){
-            let is_w = grid[y][x] === wall;
-            if(is_w && grid[y - 2][x] === wall && grid[y - 1][x] === space){
-                grid[y - 1][x] = wall;
-            } else if (x > 1 && is_w && grid[y][x - 2] === wall && grid[y][x - 1] === space){
-                grid[y][x - 1] = wall;
+        } 
+        // if all wall fill some with space
+        if (grid[y][x] === wall && grid[y - 1][x] === wall && grid[y][x + 1] === wall && grid[y - 1][x + 1] === wall) {
+            let vert = Math.round(Math.random()) > 0; // if true vertical, else horizontal
+            if (vert) {
+               grid[y][x] = space;
+               grid[y - 1][x] = space;
+            } else {
+                grid[y][x] = space;
+                grid[y][x + 1] = space;
             }
+        }
+
+        if (Math.round(Math.random()) > 0){
+            if (above_space && neighbor_space){ // diag not filled in
+                grid[y][x] = wall;
+            } else if (above_neighbor_space && curr_space){
+                grid[y][x + 1] = wall;
+            }
+        }
+
+        // checks if any diags are getting in way of moving to next level
+        if(x > 0 && !curr_space && above_space && (!above_neighbor_space || grid[y - 1][x - 1] === wall)){
+            grid[y][x] = space;
         }
     }
 }
