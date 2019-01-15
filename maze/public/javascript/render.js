@@ -1,4 +1,4 @@
-function play(grid, wall, space, start, end) {
+function play(grid, wall, space, start, end, gametype = 1) {
     let canvas = document.getElementById("mazeUI");
     let scale = 10;
     canvas.height = grid.length * scale;
@@ -7,10 +7,11 @@ function play(grid, wall, space, start, end) {
     let player = drawInitial(ctx, grid, wall, space, start, end, scale);
     registerPlayerMovement(player); // adds event listener to dom for key input
     
-    window.setInterval(() => {
+    let game_loop = window.setInterval(() => {
         if(player.dirx != 0 || player.diry != 0)
             update(ctx, player, wall, space, start, end, scale, grid);
-    }, 100)
+    }, 100);
+    return game_loop;
 }
 
 
@@ -55,17 +56,18 @@ function drawPlayer(ctx, player, wall, space, start, end, scale, grid){
     };
     if(playerCanMoveTo(new_pos, (ctx.canvas.width - scale) / scale, wall, grid)){
         player.prevX = player.x;
-        player.x += player.dirx;
+        player.x = new_pos.x;
         player.prevY = player.y;
-        player.y += player.diry;
+        player.y = new_pos.y;
     } else direction_changed = false;
 
     if(direction_changed){
         // redraw previous node to uncover it from the canvas
         let prev_node = {
             x: player.prevX, y: player.prevY,
-            type: typeAtCoord([player.prevY, player.prevX], grid)
+            type: typeAtCoord({ x: player.prevY, y: player.prevX }, grid)
         };
+        console.log(prev_node.type);
         drawNode(ctx, prev_node, wall, space, start, end, scale);
         // draw player
         ctx.fillStyle = "#FF8C00";
