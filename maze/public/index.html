@@ -4,17 +4,21 @@
   <title>Sample Hello, World Application</title>
   <script src="./javascript/maze.js"></script>
   <script src="./javascript/render.js"></script>
+  <link rel="stylesheet" type="text/css" href="./stylesheets/main_styles.css">
 </head>
 <body>
-  <canvas id="mazeUI" width="200" height="100" style="border:2px solid black;"></canvas>
-  <button id="playButton" onClick="startGame()">Play</button>
+  <div class="container">
+    <p>Use arrow keys to move. You can move diagonally by pressing up/down and left/right at the same time</p>
+    <canvas id="mazeUI" width="200" height="100" style="border:2px solid black;"></canvas>
+    <button id="playButton" onClick="startGame()">Refresh</button>
+  </div>
   <script>
     function startGame(){
       let wall = "u", space = " ", start = "s", end = "e";
       let grid = buildMaze(50, wall, space, start, end);
       play(grid, wall, space, start, end);
     }
-
+    startGame(); // automatically load the game
   </script>
 </body>
 </html>
