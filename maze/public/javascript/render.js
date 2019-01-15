@@ -4,23 +4,22 @@ function play(grid, wall, space, start, end) {
     canvas.height = grid.length * scale;
     canvas.width = canvas.height;
     ctx = canvas.getContext("2d");
-    let grid_map = {};  // out param to map canvas to grid
-    let player = drawInitial(ctx, grid, wall, space, start, end, scale, grid_map);
+    let player = drawInitial(ctx, grid, wall, space, start, end, scale);
     registerPlayerMovement(player); // adds event listener to dom for key input
     
     window.setInterval(() => {
         if(player.dirx != 0 || player.diry != 0)
-            update(ctx, player, wall, space, start, end, scale, grid_map);
+            update(ctx, player, wall, space, start, end, scale, grid);
     }, 100)
 }
 
 
-function update(ctx, player, wall, space, start, end, scale, grid_map){
+function update(ctx, player, wall, space, start, end, scale, grid){
 
-    drawPlayer(ctx, player, wall, space, start, end, scale, grid_map);
+    drawPlayer(ctx, player, wall, space, start, end, scale, grid);
 }
 
-function drawInitial(ctx, grid, wall, space, start, end, scale, grid_map){
+function drawInitial(ctx, grid, wall, space, start, end, scale){
     let player = { 
         x: null, y: null, 
         prevX: null, prevY: null,
@@ -33,36 +32,28 @@ function drawInitial(ctx, grid, wall, space, start, end, scale, grid_map){
     for(let i = 0; i < grid.length; ++i){
         for(let j = 0; j < grid.length; ++j){
             let node = { x: j, y: i, type: grid[i][j] };
-            let pos;
             if(i === 0 && node.type === start){ // create player there
                 player.x = node.x;
                 player.y = node.y;
                 player.prevX = node.x;
                 player.prevY = node.y;
-                let p = drawPlayer(ctx, player, wall, space, start, end, scale, grid_map);
-                pos = node;
-                pos.x = p.x;
-                pos.y = p.y;
-                pos.scale = p.scale;
+                drawPlayer(ctx, player, wall, space, start, end, scale, grid);
             } else{
-                pos = drawNode(ctx, node, wall, space, start, end, scale);
+                drawNode(ctx, node, wall, space, start, end, scale);
             }
-            if (!grid_map[pos.y]) grid_map[pos.y] = [];
-            grid_map[pos.y].push(pos);
         }
     }
-    console.log(grid_map);
     return player;
 }
 
-function drawPlayer(ctx, player, wall, space, start, end, scale, grid_map){
+function drawPlayer(ctx, player, wall, space, start, end, scale, grid){
     let direction_changed = true;
     // update player pos
     let new_pos = { 
         x: (player.x + player.dirx),
         y: (player.y + player.diry)
     };
-    if(playerCanMoveTo(new_pos, (ctx.canvas.width - scale) / scale, wall, scale, grid_map)){
+    if(playerCanMoveTo(new_pos, (ctx.canvas.width - scale) / scale, wall, grid)){
         player.prevX = player.x;
         player.x += player.dirx;
         player.prevY = player.y;
@@ -73,7 +64,7 @@ function drawPlayer(ctx, player, wall, space, start, end, scale, grid_map){
         // redraw previous node to uncover it from the canvas
         let prev_node = {
             x: player.prevX, y: player.prevY,
-            type: typeAtCoord([player.prevY, player.prevX], grid_map, scale)
+            type: typeAtCoord([player.prevY, player.prevX], grid)
         };
         drawNode(ctx, prev_node, wall, space, start, end, scale);
         // draw player
@@ -105,32 +96,21 @@ function drawNode(ctx, node, wall, space, start, end, scale){
         default:
             break;
     }
-    return pos;
+    return node;
 }
 
 
 // maxLR for 'maximum lower right'
-function playerCanMoveTo(pos, maxLR, wall, scale, grid_map){
-    if(!grid_map) return false;
+function playerCanMoveTo(pos, maxLR, wall, grid){
+    if(!grid) return false;
     if(pos.x < 0 || pos.y < 0) return false;
     if(pos.x > maxLR || pos.y > maxLR) return false;
 
-    return !(typeAtCoord(pos, grid_map, scale) === wall);
+    return !(typeAtCoord(pos, grid) === wall);
 }
 
-function typeAtCoord(pos, grid_map, range) {
-    let max = (pos.y + range) / range;
-    console.log(pos);
-    for (let i = pos.y / range; i <= max; ++i) {
-        if (grid_map[i]) {
-            for (let j = 0; j < grid_map[i].length; ++j) {
-                if (Math.abs(grid_map[i][j].x - pos.x) < range && Math.abs(grid_map[i][j].y - pos.y) < range) {
-                  console.log(grid_map[i][j].type);
-                  return grid_map[i][j].type;
-                }
-            }
-        }
-    }
+function typeAtCoord(pos, grid) {
+    if(grid[pos.y]) return grid[pos.y][pos.x];
 }
 
 
