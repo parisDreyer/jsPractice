@@ -1,25 +1,42 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
   <title>Sample Hello, World Application</title>
   <script src="./javascript/maze.js"></script>
   <script src="./javascript/render.js"></script>
+
   <link rel="stylesheet" type="text/css" href="./stylesheets/main_styles.css">
   <link rel="icon" href="./favicon.ico">
 </head>
 <body>
   <div class="container">
+    <h1><strong>Maze</strong></h1>
     <p>Use arrow keys to move. You can move diagonally by pressing up/down and left/right at the same time</p>
     <canvas id="mazeUI" width="200" height="100" style="border:2px solid black;"></canvas>
-    <button id="playButton" onClick="startGame()">Refresh</button>
+    <button id="playButton" onClick="startGame(window.innerWidth)">Refresh</button>
+    <!-- arrow buttons for mobile -->
+    <div class=button-group>
+      <div class="button-column">
+        <button class="direction-button" id="upArrow">^</button>
+        <button class="direction-button" id="rightArrow">></button>
+      </div>
+      <div class="button-column">
+        <button class="direction-button" id="downArrow">V</button>
+        <button class="direction-button" id="leftArrow"><</button>
+      </div>
+    </div>
   </div>
   <script>
-    function startGame(){
+    let window_width = window.innerWidth;
+    function startGame(window_width = 300){
+      window_width = window_width || 300;
       let wall = "u", space = " ", start = "s", end = "e";
       let grid = buildMaze(50, wall, space, start, end);
-      play(grid, wall, space, start, end);
+      play(grid, wall, space, start, end, window_width - 10);
     }
-    startGame(); // automatically load the game
+    startGame(window_width); // automatically load the game
   </script>
 </body>
 </html>

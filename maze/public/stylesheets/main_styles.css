@@ -4,11 +4,12 @@
     flex-direction: column;
     align-items: center;
     font-size: 16px;
+    width: 100%;
 }
 
-#mazeUI{
+/* #mazeUI{
 
-}
+} */
 
 #playButton{
     font-size: 16px;
@@ -30,4 +31,34 @@
 }
 #playButton:focus{
     outline:0;
+}
+
+.button-group{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    width: 100%;
+}
+.button-column{
+    display: flex;
+    flex-direction: column;
+}
+
+.direction-button{
+    font-size: 22px;
+    color:white;
+    text-shadow: 0 0 1px black;
+    margin: 10px;
+    height: 42px;
+    width: 42px;
+    background-color: rgb(206, 12, 12);
+    cursor: pointer;
+    border: 2px solid black;
+    border-radius: 4px;
+}
+
+.direction-button:hover{
+    text-shadow: 0 0 4px black;
+    background-color: rgba(79, 228, 248, 0.479);
+    border: 2px solid gray;
 }
