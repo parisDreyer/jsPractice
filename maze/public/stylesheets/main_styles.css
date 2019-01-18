@@ -7,15 +7,26 @@
     width: 100%;
 }
 
-/* #mazeUI{
+#mazeUI{
+    border:2px solid black;
+    width: 300;
+    height: 300;
+}
 
-} */
+.info-text{
+    position: absolute;
+    align-self: flex-start;
+    width: 100px;
+    height: 100px;
+    text-align: center;
+    word-wrap: normal;
+}
 
 #playButton{
     font-size: 16px;
     color:white;
     text-shadow: 0 0 1px black;
-    margin: 10px;
+    margin-top: 10px;
     height: 42px;
     width: 84px;
     background-color: rgb(206, 12, 12);
@@ -48,7 +59,7 @@
     font-size: 22px;
     color:white;
     text-shadow: 0 0 1px black;
-    margin: 10px;
+    margin: 8px;
     height: 42px;
     width: 42px;
     background-color: rgb(206, 12, 12);

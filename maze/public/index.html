@@ -3,7 +3,7 @@
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <title>Sample Hello, World Application</title>
+  <title>Maze</title>
   <script src="./javascript/maze.js"></script>
   <script src="./javascript/render.js"></script>
 
@@ -12,10 +12,14 @@
 </head>
 <body>
   <div class="container">
-    <h1><strong>Maze</strong></h1>
-    <p>Use arrow keys to move. You can move diagonally by pressing up/down and left/right at the same time</p>
-    <canvas id="mazeUI" width="200" height="100" style="border:2px solid black;"></canvas>
-    <button id="playButton" onClick="startGame(window.innerWidth)">Refresh</button>
+    <p class="info-text">
+      Use arrow keys to move. 
+      You can move diagonally by pressing up/down and left/right at the same time
+    </p>
+    <canvas id="mazeUI"></canvas>
+    <button id="playButton" onClick="startGame(window.innerWidth)">
+      Refresh
+    </button>
     <!-- arrow buttons for mobile -->
     <div class=button-group>
       <div class="button-column">
@@ -32,6 +36,7 @@
     let window_width = window.innerWidth;
     function startGame(window_width = 300){
       window_width = window_width || 300;
+      if(window_width > 500) window_width = 500;
       let wall = "u", space = " ", start = "s", end = "e";
       let grid = buildMaze(50, wall, space, start, end);
       play(grid, wall, space, start, end, window_width - 10);

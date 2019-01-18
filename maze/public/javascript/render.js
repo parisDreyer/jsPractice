@@ -116,9 +116,9 @@ function typeAtCoord(pos, grid) {
 
 // desktop keyboard controls for player
 function registerPlayerMovement(player) {
-    let on = document.onkeydown = checkkey.bind(player);
+    let on = document.onkeydown = checkkey.bind(player);// registers keyboard input for pc users
     let off = document.onkeyup = resetkey.bind(player);
-    registerButtonMovement(player, on, off);
+    registerButtonMovement(player, on, off);                    // registers button input for mobile users
 }
 
 function registerButtonMovement(player, on, off) {
@@ -126,6 +126,9 @@ function registerButtonMovement(player, on, off) {
   let right = document.getElementById("rightArrow");
   let down = document.getElementById("downArrow");
   let left = document.getElementById("leftArrow");
+
+  // almost works needs something to properly schedule movement only while button is held
+  // currently just moves as far as can until hits something
   up.onmouseover = () => on({ keyCode: "38" });     //player.diry = -1;
   up.onmouseleave = () => off({ keyCode: "38" });      //player.diry = 0;
   right.onmouseover = () => on({ keyCode: "39" });  //player.dirx = 1;
@@ -133,7 +136,7 @@ function registerButtonMovement(player, on, off) {
   down.onmouseover = () => on({ keyCode: '40' });   //(player.diry = 1);
   down.onmouseleave = () => off({ keyCode: '40' });    //(player.diry = 0);
   left.onmouseover = () => on({ keyCode: '37' });   //(player.dirx = -1);
-  left.onmouseleave = () => on({ keyCode: '37' });     //(player.dirx = 0);
+  left.onmouseleave = () => off({ keyCode: '37' });     //(player.dirx = 0);
 }
 function resetkey(e) {
     this.keys[e.keyCode] = false;
@@ -157,7 +160,6 @@ function resetkey(e) {
 
 
 function checkkey(e) {
-    console.log(this.keys);
     this.keys[e.keyCode] = true;
     if (e.keyCode == '38') {
         // up arrow
