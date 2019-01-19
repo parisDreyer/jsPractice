@@ -13,13 +13,36 @@
     height: 300;
 }
 
-.info-text{
+
+.info-hover-div{
     position: absolute;
-    align-self: flex-start;
+    align-self: center;
+    text-align: center;
+    bottom: 0;
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: bold;
+    background-color: yellow;
+    border-radius: 4px;
+    padding: 2px;
+    box-shadow: 0 0 10px black;
+}
+
+.info-hover-div .info-text {
+    display: none;
+}
+.info-hover-div:hover{
+    background-color: yellow;
+    color: black;
+    margin-bottom: 5px;
+    width: 100px;
+}
+.info-hover-div:hover .info-text{
+    display: inline;
     width: 100px;
     height: 100px;
     text-align: center;
-    word-wrap: normal;
+    word-wrap: break-word;
 }
 
 #playButton{

@@ -14,18 +14,25 @@ function buildMaze(n, wall = "u", space = " ", start = "%s", end ="%e"){
             grid[i][x] = wall;
             occupied.push(x);
         }
-        fillInWalls(grid, n, i, wall, space);
     }
     let { start_coord, end_coord } = setStartAndEndCoordinates(grid, n, start, end);
     let paths = drawPathToEnd(grid, [start_coord.y, start_coord.x], [end_coord.y, end_coord.x], start, space, end);
+    
     plotPointsOnGrid(grid, paths, space);
-    connectSomeDisconnectedPools(grid, [start_coord.y, start_coord.x], [end_coord.y, end_coord.x], wall, space, start, end);
+    let preserve_spaces = {};
+    for(let i = 0; i < paths.length; ++i){
+        let [y, x] = paths[i];
+        if(!preserve_spaces[y]) preserve_spaces[y] = [x];
+        else if(!preserve_spaces[y].includes(x)) preserve_spaces[y].push(x);
+    }
+    for(let i = 0; i < n; ++i){
+        fillInWalls(grid, preserve_spaces, n, i, wall, space);
+    }
     // printMaze(grid, top_and_bottom);
     return grid;
 }
 
 function plotPointsOnGrid(grid, points, mark){
-    console.log(points);
     for(let i = 0; i < points.length; ++i){
         let [y, x] = points[i];
         grid[y][x] = mark;
@@ -36,19 +43,32 @@ function plotPointsOnGrid(grid, points, mark){
 // returns a hash of coordinates that represent the path
 function drawPathToEnd(grid, start_pos, end_pos, start, space, end){
     let n = grid.length;
+    let max = n - 2, min = 1;
     let path = [];
     let [y, x] = start_pos;
-    while(y != end_pos[0] && x != end_pos[1]){
+    let still_searching = true;// y != end_pos[0] && x != end_pos[1];
+
+    const checkEndReached = () => {
+        if(grid[y][x] === end) {
+            console.log('end reached', [y, x]);
+            still_searching = false;
+            // path.push([y, x]);
+            return true;
+        } else return false;
+    }
+    while(still_searching){
         let left = Math.random() > 0.495;
+        let up = Math.random() < 0.495;
         if(end_pos[0] > y) diry = 1;
         else if (end_pos[0] < y) diry = -1; 
         if (end_pos[1] > x) dirx = 1;
         else if (end_pos[1] < x) dirx = -1;
         let srty = y != end_pos[0], srtx = x != end_pos[1];
-        let counter = 10;
+        let counter = randInRange(0, Math.floor(n/ 2));
         while(counter > 0 && (srty || srtx) ){
-            if(grid[y][x] === end) return path;
-            else if(grid[y][x] != start) {
+            if (checkEndReached()) { 
+                return path;
+            } else if(grid[y][x] != start) {
                 grid[y][x] = space;    // set the next step in the path
                 path.push([y, x]);
             }
@@ -56,46 +76,84 @@ function drawPathToEnd(grid, start_pos, end_pos, start, space, end){
             else if (srtx) x += dirx;
             else break;
             srty = y != end_pos[0], srtx = x != end_pos[1];
-            if(x < 0){ x = 0; break;}
-            if(x >= n) { x = n - 1; break;}
-            if (y < 0) { y = 0; break; }
-            if (y >= n) { y = n - 1; break; }
+            if (x < min) { x = min; break; }
+            if (x > max) { x = max; break; }
+            if (y < min) { y = min; break; }
+            if (y > max) { y = max; break; }
             counter--;
         }
-        counter = 2;
+        counter = randInRange(0, n / 2);
         if(left){
             while(counter > 0 && x > 0){
+                if(checkEndReached()){ 
+                    return path;
+                } else if (grid[y][x] != start) {
+                    grid[y][x] = space;    // set the next step in the path
+                    path.push([y, x]);
+                }
                 x--;
-                if (grid[y][x] === start || grid[y][x] === end) return path;
-                else grid[y][x] = space;    // set the next step in the path
-                if(x > -1) path.push([y, x]);
+                counter--;
+            }
+        } else {     
+            while (counter > 0 && x < n) {
+                if(checkEndReached()){ 
+                    return path;
+                } else if (grid[y][x] != start){
+                    grid[y][x] = space;    // set the next step in the path
+                    path.push([y, x]);
+                }
+                x++;
+                counter--;
+            }
+        }
+        counter = randInRange(0, n / 2);
+        if(up){
+            while (counter > 0 && y > 0) {
+                if(checkEndReached()){ 
+                    return path;
+                } else if (grid[y][x] != start) {
+                    grid[y][x] = space;    // set the next step in the path
+                    path.push([y, x]);
+                }
+                y--;
                 counter--;
             }
         } else {
-            while (counter > 0 && x < n) {
-                x++;
-                if(x < n) path.push([y, x]);
-                if (grid[y][x] === start || grid[y][x] === end) return path;
-                else grid[y][x] = space;    // set the next step in the path
+            while (counter > 0 && y < n) {
+                if(checkEndReached()){ 
+                    return path;
+                } else if (grid[y][x] != start) {
+                    grid[y][x] = space;    // set the next step in the path
+                    path.push([y, x]);
+                }
+                y++;
                 counter--;
             }
         }
+        console.log(`y: ${y}  x: ${x}`, end_pos);
+        still_searching = y != end_pos[0] || x != end_pos[1];
+        if (x < min) { x = min; }
+        if (x > max) { x = max; }
+        if (y < min) { y = min; }
+        if (y > max) { y = max; }
+        console.log('still_searching: ', still_searching);
     }
     return path;
 }
 
-function setRand2block(grid, y, x, diry, dirx, block){
+function setRand2block(grid, y, x, diry, dirx, block, player_path){
     let vert = Math.round(Math.random()) > 0; // if true vertical, else horizontal
+    let hasx = !player_path[y] || player_path[y].includes(x);
     if (vert) {
-        grid[y][x] = block;
-        grid[y + diry][x] = block;
+        if(!hasx) grid[y][x] = block;
+        if (!player_path[y + diry] || !player_path[y + diry].includes(x)) grid[y + diry][x] = block;
     } else {
-        grid[y][x] = block;
-        grid[y][x + dirx] = block;
+        if (!hasx) grid[y][x] = block;
+        if (!player_path[y] || !player_path[y].includes(x + dirx)) grid[y][x + dirx] = block;
     }
 }
 // helper methods:
-function fillInWalls(grid, n, y, wall, space){
+function fillInWalls(grid, player_path, n, y, wall, space){
     let max = n - 1;
     if(y === 0) return;
     let posMarkedForWall = [];
@@ -110,39 +168,39 @@ function fillInWalls(grid, n, y, wall, space){
 
         // if all space fill some with wall
         if (has_space && curr_space && above_space && neighbor_space && above_neighbor_space){
-            setRand2block(grid, y, x, -1, 1, wall);
+            setRand2block(grid, y, x, -1, 1, wall, player_path);
         } 
         // if all wall fill some with space
-        if (x > 0 && grid[y][x] === wall && grid[y - 1][x] === wall && grid[y][x - 1] === wall && grid[y - 1][x - 1] === wall) {
-            setRand2block(grid, y, x, -1, -1, space);
-        } else if (grid[y][x] === wall && grid[y - 1][x] === wall && grid[y][x + 1] === wall && grid[y - 1][x + 1] === wall){
-            setRand2block(grid, y, x, -1, 1, space);
-        }
+        // if (x > 0 && grid[y][x] === wall && grid[y - 1][x] === wall && grid[y][x - 1] === wall && grid[y - 1][x - 1] === wall) {
+        //     setRand2block(grid, y, x, -1, -1, space, player_path);
+        // } else if (grid[y][x] === wall && grid[y - 1][x] === wall && grid[y][x + 1] === wall && grid[y - 1][x + 1] === wall){
+        //     setRand2block(grid, y, x, -1, 1, space, player_path);
+        // }
 
         // add a wall in a diagonal at random
-        if (Math.round(Math.random()) > 0){
-            if (above_space && neighbor_space){ // diag not filled in
-                posMarkedForWall.push([y, x + 1]);
-            } else if (above_neighbor_space && curr_space){
-                posMarkedForWall.push([y, x+1]);
-            }
-        }
+        // if (Math.round(Math.random()) > 0){
+        //     if (!curr_space && above_space && neighbor_space && (!player_path[y] || !player_path[y].includes(x))) { // diag not filled in
+        //         posMarkedForWall.push([y, x]);
+        //     } else if (above_neighbor_space && curr_space && (!player_path[y] || !player_path[y].includes(x + 1))) {
+        //         posMarkedForWall.push([y, x + 1]);
+        //     }
+        // }
 
         // checks if any diags are getting in way of moving to next level
-        if(x > 0 && !curr_space && above_space && (!above_neighbor_space || grid[y - 1][x - 1] === wall)){
-            grid[y][x] = space;
-        } else if (!curr_space && above_space && (!above_neighbor_space || grid[y - 1][x + 1] === wall)) {
-            grid[y][x] = space;
-        }
+        // if(x > 0 && !curr_space && above_space && (!above_neighbor_space || grid[y - 1][x - 1] === wall)) {
+        //     grid[y][x] = space;
+        // } else if (!curr_space && above_space && (!above_neighbor_space || grid[y - 1][x + 1] === wall)) {
+        //     grid[y][x] = space;
+        // }
         
     }
 
-    for(let i = 0; i < posMarkedForWall.length - 2; ++i){
-        let random_idx = randInRange(0, posMarkedForWall.length);
-        swap(posMarkedForWall, random_idx, posMarkedForWall.length - 1);
-        let pos = posMarkedForWall.pop();
-        grid[pos[0]][pos[1]] = wall;
-    }
+    // for(let i = 0; i < posMarkedForWall.length - 2; ++i){
+    //     let random_idx = randInRange(0, posMarkedForWall.length);
+    //     swap(posMarkedForWall, random_idx, posMarkedForWall.length - 1);
+    //     let pos = posMarkedForWall.pop();
+    //     grid[pos[0]][pos[1]] = wall;
+    // }
 }
 
 function swap(arr, i, j){
@@ -213,99 +271,6 @@ function merge(a, b){
         })
     });
     return a;
-}
-
-function floodsearch(grid, y, x, target, seen = {}){
-    // base cases
-    let yinbounds = y + 1 < grid.length;
-    if(y < 0 || !yinbounds) return seen;
-    let xinbounds = x + 1 < grid.length;
-    if(x < 0 || !xinbounds) return seen;
-    if(grid[y][x] != target) return seen;
-
-    if(!seen[y]) seen[y] = {};
-    if(yinbounds && !seen[y+1]) seen[y+1] = {};
-    if(y > 0 && !seen[y - 1]) seen[y - 1] = {};
-    if(!seen[y][x]) seen[y][x] = true;
-
-    if(yinbounds && !seen[y + 1][x]){
-        merge(seen, floodsearch(grid, y + 1, x, target, seen));
-    }if(y > 0 && !seen[y - 1][x]){
-        merge(seen, floodsearch(grid, y - 1, x, target, seen));
-    }if(!seen[y][x]){
-        merge(seen, floodsearch(grid, y, x + 1, target, seen));
-    }if(x > 0 && !seen[y][x - 1]){
-        merge(seen, floodsearch(grid, y, x - 1, target, seen));
-    }
-    return seen;
-}
-
-function connectSomeDisconnectedPools(grid, start_pos, end_pos, wall, space, start, end) {
-    let length = grid.length;
-    count = 0;
-    while(length > 1 && count < 10){
-        count++
-        // console.log(count, length);
-        let allseen = [];
-        let mid = Math.floor(grid.length / 2);
-        for(let i = 0; i < grid.length; ++i){
-            let pool1 = floodsearch(grid, i, i, space); 
-            let found1 = allseen.filter(pool => poolAccessibleFromOther(pool, pool1));
-            if(!found1.length > 0) allseen.push(pool1);
-
-            let pool2 = floodsearch(grid, i, grid.length - 1 - i);
-            let found2 = allseen.filter(pool => poolAccessibleFromOther(pool, pool2))
-            if (i != mid && !found2.length > 0) allseen.push(pool2);
-        }
-
-        walls_to_remove = [];
-        length = allseen.length;
-        while(allseen.length > 0){
-            let pool = allseen.pop();
-            let ys = Object.keys(pool);
-            for(let i = 0; i < ys.length; ++i){
-                let y = ys[i];
-                let xs = Object.keys(pool[y]);
-                for(let j = 0; j < xs.length; ++j){
-                    let x = xs[j];
-                    let res = scanForWall(grid, y, x, wall, 5)
-                    if(res){
-                        walls_to_remove.push(res);
-                    }
-                }
-            }
-        }
-
-        for(let i = 0; i < walls_to_remove.length; ++i){
-            let [ry, rx] = walls_to_remove[i];
-            grid[ry][rx] = space;
-        }
-    }
-}
-function scanForWall(grid, y, x, wall, dist){
-    if(grid[y] && grid[x] === wall) return [y, x];
-    else if(!grid[y] || !grid[y][x]) return false;
-    if(dist === 0) return false;
-    let nxt_checks = fourDirections(x, y, 1, grid.length);
-    for(let i = 0; i < nxt_checks.length; ++i){
-        let res = scanForWall(grid, nxt_checks[0], nxt_checks[1], wall, dist - 1);
-        if(res) return res;
-    }
-    return false;
-}
-
-
-function poolAccessibleFromOther(pool1, pool2){
-    let ys = Object.keys(pool1);
-    for(let i = 0; i < ys.length; ++i){
-        let y = ys[i];
-        let xs = pool1[y];
-        for(let j = 0; j < xs.length; ++j){
-            let x = xs[j];
-            if(pool2[y] && pool2[y][x]) return true;
-        }
-    }
-    return false;
 }
 
 
