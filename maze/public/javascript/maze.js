@@ -1,7 +1,7 @@
 // builds NxN maze with walls between random points
 function buildMaze(n, wall = "u", space = " ", start = "%s", end ="%e"){
     let grid = [];
-    let [empty_row, top_and_bottom] = generateLayoutVars(n, space);
+    let empty_row = Array.from(new Array(n)).map(el => space);
     let walls_per_row = Math.sqrt(n);
 
     for(let i = 0; i < n; ++i){
@@ -14,11 +14,17 @@ function buildMaze(n, wall = "u", space = " ", start = "%s", end ="%e"){
         }
     }
     let { start_coord, end_coord } = setStartAndEndCoordinates(grid, n, start, end);
-    let paths = drawPathToEnd(grid, [start_coord.y, start_coord.x], [end_coord.y, end_coord.x], start, space, end);
+    let paths = drawPathToEnd(grid, [start_coord.y, start_coord.x], [end_coord.y, end_coord.x], start, space, wall, end);
     
     Object.keys(paths).map(y => grid[y] = paths[y].map((isPath, x) => 
         isPath ? space : grid[y][x]));
     
+    // set the end coord in the path to ensure we don't put a wall there
+    if(!paths[end_coord.y]) paths[end_coord.y] = [];
+    for(let i = 0; i <= end_coord.x; ++i){
+        paths[end_coord.y].push(false);
+    } paths[end_coord.y][end_coord.x] = true;;
+
     for(let i = 0; i < n; ++i){
         fillInWalls(grid, paths, n, i, wall, space);
     }
@@ -26,16 +32,14 @@ function buildMaze(n, wall = "u", space = " ", start = "%s", end ="%e"){
     return grid;
 }
 
-    
-
 
 // helper for buildMaze(). Draws a long winding path to end_pos
 // returns a hash of coordinates that represent the path
-function drawPathToEnd(grid, start_pos, end_pos, start, space, end){
+function drawPathToEnd(grid, start_pos, end_pos, start, space, wall, end){
     // some variables for the calculation
     let n = grid.length;
     let max = n - 2, min = 1;
-    this.max_path_length = Math.floor((Math.sqrt(n))* n);
+    this.max_path_length = Math.floor((n / 2)* n);
     this.curr_path_length = 0;
     let path = {};  // path contains arrays of booleans 
                     // specifying whether a given index
@@ -76,55 +80,44 @@ function drawPathToEnd(grid, start_pos, end_pos, start, space, end){
     // until we have a good bunch of meandering, keep adding a meandering path
     let prevX = null, prevY = null;
     while(still_searching && isGoodDistanceFromEnd()){
-        // let good_horizontal_dist = Math.abs(y - prevY) > 2;
+        putWallInExtraSpace(path, y, x, wall, space);
+        let good_horizontal_dist = Math.abs(y - prevY) > 3;
         let left = Math.random() > 0.495;
-        let up = //(!good_horizontal_dist || 
-            Math.abs(x - prevX) > 2 && Math.random() < 0.495; 
+        let up = (!good_horizontal_dist || Math.abs(x - prevX) > 2) && Math.random() < 0.495; 
 
         prevX = x, prevY = y;
         counter = Math.floor(Math.sqrt(n));
 
-    // if(good_horizontal_dist){
-        if(left){
-            while (counter > 0 && x >= min){
-                if (checkEndReached()) {
-                    return path;
+        if(good_horizontal_dist){
+            if(left){
+                while (counter > 0 && x >= min){
+                    if (checkEndReached()) return path;
+                    else if (updatePath()) x--;
+                    else break;
+                    counter--;
                 }
-                else if (updatePath()) x--;
-                else { x--; break;}
-                counter--;
-            }
-        } else {     
-            while (counter > 0 && x < max) {
-                if (checkEndReached()) {
-                    return path;
+            } else {     
+                while (counter > 0 && x < max) {
+                    if (checkEndReached()) return path;
+                    else if(updatePath()) x++;
+                    else break;
+                    counter--;
                 }
-                else if(updatePath()) x++;
-                else { //x++;
-                    break;}
-                counter--;
             }
         }
-        // console.log(x, y);
-    // }
         counter = randInRange(Math.floor(Math.sqrt(n)), n / 2);
         if(up){
             while (counter > 0 && (y >= min || x === start_pos[0])) {
                 if (checkEndReached()) return path
                 else if (updatePath()) y--;
-                else { //y--; 
-                    break;}
+                else break;
                 counter--;
             }
-        } else 
-        {
+        } else {
             while (counter > 0 && y <= max) {
-                if (checkEndReached()) {
-                    return path;
-                }
+                if (checkEndReached()) return path;
                 else if(updatePath()) y++;
-                else {//y++; 
-                    break;}
+                else break;
                 counter--;
             }
         }
@@ -134,7 +127,6 @@ function drawPathToEnd(grid, start_pos, end_pos, start, space, end){
         if (y < min) { y = min; }
         if (y > max) { y = max; }
     }
-
 
     // ========================================
     // if not at end after meandering get to end, 
@@ -152,13 +144,11 @@ function drawPathToEnd(grid, start_pos, end_pos, start, space, end){
             path[ny][nx] = false; // nx is no longer the path;
         }
     }
-    
     let dx = x - end_pos[1], dy = y - end_pos[0];
     dx = dx / Math.abs(dx), dy = dy / Math.abs(dy); // normalize
     // get x to end pos x and y to end pos y
-    let end_reached = false;
-    while(!end_reached){
-        console.log(y, x)
+    // let end_reached = false;
+    while(checkEndReached()){
         if(x != end_pos[1]){
             add_coord();
             subtract_coord(y - 1, x);  // remove extra possible paths from start to end
@@ -176,9 +166,28 @@ function drawPathToEnd(grid, start_pos, end_pos, start, space, end){
     return path;
 }   // end function drawPathToEnd
 
+// helper for drawPathToEnd
+function putWallInExtraSpace(path, y, x, wall, space){
+    // if a 3x3 block of space, put a wall in the center
+    if (path[y] && path[y][x] === space &&
+        path[y][x - 1] === space &&
+        path[y][x + 1] === space &&
+        path[y - 1] && path[y][x] === space &&
+        path[y - 1][x - 1] === space &&
+        path[y - 1][x + 1] == space &&
+        path[y + 1] && path[y][x] === space &&
+        path[y + 1][x - 1] === space &&
+        path[y + 1][x + 1] === space){
+            path[y][x] = wall;
+    }
+}
+
 function setRand2block(grid, y, x, diry, dirx, block, player_path){
     let vert = Math.round(Math.random()) > 0; // if true vertical, else horizontal
     let hasx = player_path[y] ? player_path[y][x] : false;
+    if(!grid[y + diry]) return;
+    if(!grid[y + diry][x + dirx]) return;
+
     if (vert) {
         if(!hasx) grid[y][x] = block;
         let mody = y + diry;
@@ -191,7 +200,7 @@ function setRand2block(grid, y, x, diry, dirx, block, player_path){
 }
 // helper methods:
 function fillInWalls(grid, player_path, n, y, wall, space) {
-    let max = n - 1;
+    let max = n;
     if(y === 0) return;
     for(let x = 0; x < max; ++x){
         // if a square of space
@@ -203,18 +212,12 @@ function fillInWalls(grid, player_path, n, y, wall, space) {
         if (x > 1) has_space = has_space || grid[y][x - 1] === space && grid[y - 1][x - 1] === space;
 
         // if all space fill some with wall
-        if (has_space && curr_space && above_space && neighbor_space && above_neighbor_space){
+        if (has_space && above_space && neighbor_space && above_neighbor_space){
             setRand2block(grid, y, x, -1, 1, wall, player_path);
-        } 
+        }
+
     }
 }
-
-function swap(arr, i, j){
-    let val = arr[i];
-    arr[i] = arr[j];
-    arr[j] = val;
-}
-
 
 function setStartAndEndCoordinates(grid, n, start, end) {
     let rng = Math.round(Math.sqrt(n));
@@ -232,23 +235,11 @@ function setStartAndEndCoordinates(grid, n, start, end) {
     return {start_coord: start_c, end_coord: end_c };
 }
 
-
-function generateLayoutVars(n, space){
-    let empty_row = [];
-    let top_and_bottom = "^_";
-    for (let i = 0; i < n; ++i) {
-        empty_row.push(space);
-        top_and_bottom += "_"
-    }
-    top_and_bottom += "_^";
-    return [empty_row, top_and_bottom];
-}
-
+// ============================================
+// utility functions;
 
 // max is an exclusive upper bound
-function randInRange(min, max) {
-  return Math.floor(Math.random() * (max - min) + min);
-}
+const randInRange = (min, max) => Math.floor(Math.random() * (max - min) + min);
 
 function shuffle(a) {
     var j, x, i;
@@ -267,7 +258,6 @@ function fourDirections(x, y, z, n, exclude = []){
         .filter(coord => coord[0] > -1 && coord[1] > -1 && coord[0] < n && coord[1] < n)
         .filter(coord => !exclude.includes(coord[1]));
 }
-
 
 function absDif(pos1, pos2){
     let dy = pos1[0] - pos2[0];
