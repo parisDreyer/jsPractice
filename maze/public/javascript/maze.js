@@ -15,12 +15,14 @@ function buildMaze(n, wall = "u", space = " ", start = "%s", end ="%e"){
     }
     let { start_coord, end_coord } = setStartAndEndCoordinates(grid, n, start, end);
     let paths = drawPathToEnd(grid, [start_coord.y, start_coord.x], [end_coord.y, end_coord.x], start, space, end);
-    Object.keys(paths).map(y => paths[y].forEach(x => (x ? (grid[y][x] = wall) : false)));
+    
+    Object.keys(paths).map(y => grid[y] = paths[y].map((isPath, x) => 
+        isPath ? space : grid[y][x]));
     
     for(let i = 0; i < n; ++i){
         fillInWalls(grid, paths, n, i, wall, space);
     }
-    // printMaze(grid, top_and_bottom);
+
     return grid;
 }
 
@@ -33,8 +35,8 @@ function drawPathToEnd(grid, start_pos, end_pos, start, space, end){
     // some variables for the calculation
     let n = grid.length;
     let max = n - 2, min = 1;
-    let max_path_length = Math.floor((n / 2) * n);
-    let curr_path_length = 0;
+    this.max_path_length = Math.floor((Math.sqrt(n))* n);
+    this.curr_path_length = 0;
     let path = {};  // path contains arrays of booleans 
                     // specifying whether a given index
                     // is an x coordinate in the path
@@ -51,69 +53,78 @@ function drawPathToEnd(grid, start_pos, end_pos, start, space, end){
             return true;
         } else return false;
     }
-    const add_coord = () => { 
+    const add_coord = (() => { 
         if (!path[y] && grid[y]) path[y] = [];
-        if(path[y]){
-            for(let i = path[y].length; i <= x; ++i){ path[y].push(false); }
+        if(typeof path[y] === 'object'){
+            for(let i = path[y].length - 1; i <= x; ++i){ path[y].push(false); }
+            this.curr_path_length++;
             path[y][x] = true; // x is in the path;
         } return path[y] && path[y][x];
-    }
+    }).bind(this);
+
     const updatePath = () => {
         if (y > 0 && y < n && grid[y][x] != start) {
-          curr_path_length++;
-          // grid[y][x] = space; // set the next step in the path
           return add_coord();
         } return false;
     };
 
-    const isGoodDistanceFromEnd = () =>  // check if we've done enough meandering
-        (max_path_length - curr_path_length) >
-        (Math.abs(y - end_pos[0]) + Math.abs(x - end_pos[1])) + 1;
+    const isGoodDistanceFromEnd = () => // check if we've done enough meandering
+        this.max_path_length - this.curr_path_length > (Math.abs(y - end_pos[0]) + Math.abs(x - end_pos[1]));
+
     
     // ========================================
     // until we have a good bunch of meandering, keep adding a meandering path
     let prevX = null, prevY = null;
     while(still_searching && isGoodDistanceFromEnd()){
-        let good_horizontal_dist = Math.abs(y - prevY) > 2;
+        // let good_horizontal_dist = Math.abs(y - prevY) > 2;
         let left = Math.random() > 0.495;
-        let up = (!good_horizontal_dist || Math.abs(x - prevX) > 2) && Math.random() < 0.495; 
-        if(end_pos[0] > y) diry = 1;
-        else if (end_pos[0] < y) diry = -1; 
-        if (end_pos[1] > x) dirx = 1;
-        else if (end_pos[1] < x) dirx = -1;
-        prevX = x, prevY = y;
-        counter = randInRange(2, n / 2);
+        let up = //(!good_horizontal_dist || 
+            Math.abs(x - prevX) > 2 && Math.random() < 0.495; 
 
-        if(good_horizontal_dist){
+        prevX = x, prevY = y;
+        counter = Math.floor(Math.sqrt(n));
+
+    // if(good_horizontal_dist){
         if(left){
-            while (counter > 0 && (x >= min || (y === max))){
-                if (checkEndReached()) return path
+            while (counter > 0 && x >= min){
+                if (checkEndReached()) {
+                    return path;
+                }
                 else if (updatePath()) x--;
                 else { x--; break;}
                 counter--;
             }
         } else {     
-            while (counter > 0 && (x < max || y === max)) {
-                if (checkEndReached()) return path
+            while (counter > 0 && x < max) {
+                if (checkEndReached()) {
+                    return path;
+                }
                 else if(updatePath()) x++;
-                else { x++; break;}
+                else { //x++;
+                    break;}
                 counter--;
             }
         }
-    }
-        counter = randInRange(2, n / 2);
+        // console.log(x, y);
+    // }
+        counter = randInRange(Math.floor(Math.sqrt(n)), n / 2);
         if(up){
             while (counter > 0 && (y >= min || x === start_pos[0])) {
                 if (checkEndReached()) return path
                 else if (updatePath()) y--;
-                else { y--; break;}
+                else { //y--; 
+                    break;}
                 counter--;
             }
-        } else {
+        } else 
+        {
             while (counter > 0 && y <= max) {
-                if (checkEndReached()) return path 
+                if (checkEndReached()) {
+                    return path;
+                }
                 else if(updatePath()) y++;
-                else {y++; break;}
+                else {//y++; 
+                    break;}
                 counter--;
             }
         }
@@ -131,7 +142,6 @@ function drawPathToEnd(grid, start_pos, end_pos, start, space, end){
     // ==============================
 
     let startX = x, startY = y;
-    let startXjunction = x, startYjunction = y;
     // removes a coordinate from the path
     const subtract_coord = (ny, nx) => {
         if (path[ny] && path[ny][nx] 
@@ -145,30 +155,24 @@ function drawPathToEnd(grid, start_pos, end_pos, start, space, end){
     
     let dx = x - end_pos[1], dy = y - end_pos[0];
     dx = dx / Math.abs(dx), dy = dy / Math.abs(dy); // normalize
-    const bringXHome = () => {  // get x to end pos x
-        while(x != end_pos[1]){
-            x -= dx;
+    // get x to end pos x and y to end pos y
+    let end_reached = false;
+    while(!end_reached){
+        console.log(y, x)
+        if(x != end_pos[1]){
             add_coord();
             subtract_coord(y - 1, x);  // remove extra possible paths from start to end
             subtract_coord(y + 1, x); 
+            x -= dx;
         }
-    }
-    const bringYHome = () => {  // gets y to end pos y
-        while (y != end_pos[0]) {
-            y -= dy;
+        else if (y != end_pos[0]){
             add_coord();
             subtract_coord(y, x - 1); // remove extra possible paths from start to end
             subtract_coord(y, x + 1);
-        }
+            y -= dy;
+        } else end_reached = true;
     }
-    let doXfirst = Math.round(Math.random()) > 0; // randomly choose to bring x or y home first
-    if(doXfirst){
-        bringXHome();
-        bringYHome();
-    } else {
-        bringYHome();
-        bringXHome();
-    }
+    
     return path;
 }   // end function drawPathToEnd
 
@@ -213,8 +217,16 @@ function swap(arr, i, j){
 
 
 function setStartAndEndCoordinates(grid, n, start, end) {
-    let start_c = { y: 0, x: randInRange(0, n) }; // start at top
-    let end_c = { y: (n - 1), x: randInRange(0, n) }; // end at bottom
+    let rng = Math.round(Math.sqrt(n));
+    // get the closest x to start or end of first row
+    let sx1 = randInRange(1, rng), sx2 = randInRange(n - rng, n - 1);
+    let start_x = Math.abs(rng - sx1) > Math.abs(n - sx2) ? sx2 : sx1;
+    let start_c = { y: 0, x: start_x }; // start at top
+
+    // set the end x coord to farthest possible from start
+    let ex1 = randInRange(1, rng), ex2 = randInRange(n - rng, n - 1);
+    let end_x = Math.abs(start_c.x - ex1) < Math.abs(start_c.x - ex2) ? ex2 : ex1;
+    let end_c = { y: (n - 1), x: end_x }; // end at bottom
     grid[start_c.y][start_c.x] = start;
     grid[end_c.y][end_c.x] = end;
     return {start_coord: start_c, end_coord: end_c };
@@ -230,12 +242,6 @@ function generateLayoutVars(n, space){
     }
     top_and_bottom += "_^";
     return [empty_row, top_and_bottom];
-}
-
-function printMaze(grid, top_and_bottom){
-    console.log(top_and_bottom + 
-        "\n" + grid.map(row => "| " + 
-        row.join("") + " |").join("\n") + "\n" + top_and_bottom);
 }
 
 
